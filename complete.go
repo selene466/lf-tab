@@ -77,6 +77,8 @@ var (
 		"shell-wait",
 		"source",
 		"sync",
+		"tab-close",
+		"tab-open",
 		"tag",
 		"tag-toggle",
 		"toggle",

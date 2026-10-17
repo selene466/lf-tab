@@ -659,6 +659,19 @@ func (ui *ui) drawPromptLine(nav *nav) {
 		fname = sanitizeName(filepath.Base(curr.path))
 	}
 
+	// list of open tabs on the right side, only shown when there are multiple tabs
+	var tabs string
+	if len(nav.tabs) > 1 {
+		for _, n := range slices.Sorted(maps.Keys(nav.tabs)) {
+			if n == nav.tabInd {
+				tabs += fmt.Sprintf("\033[7m %d \033[0m", n)
+			} else {
+				tabs += fmt.Sprintf(" %d ", n)
+			}
+		}
+	}
+	width := ui.promptWin.w - printLength(tabs)
+
 	var prompt string
 
 	// git style colored prompts contain hidden bytes that lf would print as extra characters
@@ -668,7 +681,7 @@ func (ui *ui) drawPromptLine(nav *nav) {
 	prompt = strings.ReplaceAll(prompt, "%h", gHostname)
 	prompt = strings.ReplaceAll(prompt, "%f", fname)
 
-	if printLength(strings.ReplaceAll(strings.ReplaceAll(prompt, "%w", pwd), "%d", pwd)) > ui.promptWin.w {
+	if printLength(strings.ReplaceAll(strings.ReplaceAll(prompt, "%w", pwd), "%d", pwd)) > width {
 		names := strings.Split(pwd, sep)
 		for i := range names {
 			if names[i] == "" {
@@ -676,7 +689,7 @@ func (ui *ui) drawPromptLine(nav *nav) {
 			}
 			r, _ := utf8.DecodeRuneInString(names[i])
 			names[i] = string(r)
-			if printLength(strings.ReplaceAll(strings.ReplaceAll(prompt, "%w", strings.Join(names, sep)), "%d", strings.Join(names, sep))) <= ui.promptWin.w {
+			if printLength(strings.ReplaceAll(strings.ReplaceAll(prompt, "%w", strings.Join(names, sep)), "%d", strings.Join(names, sep))) <= width {
 				break
 			}
 		}
@@ -696,13 +709,16 @@ func (ui *ui) drawPromptLine(nav *nav) {
 	}
 
 	// spacer
-	avail := ui.promptWin.w - printLength(prompt) + 2
+	avail := width - printLength(prompt) + 2
 	if avail > 0 {
 		prompt = strings.Replace(prompt, "%S", strings.Repeat(" ", avail), 1)
 	}
 	prompt = strings.ReplaceAll(prompt, "%S", "")
 
 	ui.promptWin.print(ui.screen, 0, 0, st, prompt)
+	if tabs != "" {
+		ui.promptWin.print(ui.screen, width, 0, st, tabs)
+	}
 }
 
 // Deprecated: Only called by drawRuler, which will eventually be replaced by drawRulerFile

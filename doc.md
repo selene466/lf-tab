@@ -144,7 +144,7 @@ Inherit lf's working directory in your shell:
 
 The following commands are provided by lf:
 
-	quit                     (default 'q')
+	quit
 	up                       (default 'k' and '<up>')
 	half-up                  (default '<c-u>')
 	page-up                  (default '<c-b>' and '<pgup>')
@@ -157,6 +157,8 @@ The following commands are provided by lf:
 	open                     (default 'l' and '<right>')
 	jump-next                (default ']')
 	jump-prev                (default '[')
+	tab-open                 (default '<a-1>' to '<a-9>')
+	tab-close                (default 'q')
 	top                      (default 'gg' and '<home>')
 	bottom                   (default 'G' and '<end>')
 	high                     (default 'H')
@@ -502,9 +504,10 @@ https://github.com/gokcehan/lf/blob/master/etc/lfrc.example
 This section shows information about built-in commands.
 Modal commands do not take any arguments, but instead change the operation mode to read their input conveniently, and so they are meant to be assigned to keybindings.
 
-## quit (default `q`)
+## quit
 
 Quit lf and return to the shell.
+Unlike `tab-close`, this quits even if there are multiple tabs open.
 
 ## up (default `k` and `<up>`), half-up (default `<c-u>`), page-up (default `<c-b>` and `<pgup>`), scroll-up (default `<c-y>`), down (default `j` and `<down>`), half-down (default `<c-d>`), page-down (default `<c-f>` and `<pgdn>`), scroll-down (default `<c-e>`)
 
@@ -523,6 +526,18 @@ A custom `open` command can be defined to override this default.
 ## jump-next (default `]`), jump-prev (default `[`)
 
 Change the current working directory to the next/previous jumplist item.
+
+## tab-open (default `<a-1>` to `<a-9>`)
+
+Switch to the tab with the number (1 to 9) given in the argument.
+If the tab does not exist, it is created with the current directory and file.
+Each tab keeps its own working directory, current file and jumplist, while everything else (e.g. selections, clipboard, marks and tags) is shared between tabs.
+The list of open tabs is shown at the right side of the prompt line when there is more than one tab.
+
+## tab-close (default `q`)
+
+Close the current tab and switch to the closest tab on the left, or on the right if there is none.
+If the current tab is the only one, quit lf.
 
 ## top (default `gg` and `<home>`), bottom (default `G` and `<end>`)
 

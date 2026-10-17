@@ -431,6 +431,14 @@ type clipboard struct {
 	mode  clipboardMode
 }
 
+// tab holds the state of a tab while it is not the current one.
+type tab struct {
+	path        string   // working directory of the tab
+	file        string   // path of the current file in the tab
+	jumpList    []string // jumplist of the tab
+	jumpListInd int      // index of the current jumplist item
+}
+
 type nav struct {
 	dirPaths        []string
 	copyJobs        int
@@ -479,6 +487,8 @@ type nav struct {
 	preloadTimer    *time.Timer
 	jumpList        []string
 	jumpListInd     int
+	tabs            map[int]*tab
+	tabInd          int
 }
 
 func (nav *nav) getDir(path string) *dir {
@@ -599,6 +609,8 @@ func newNav(ui *ui) *nav {
 		preloadTimer:    time.NewTimer(0),
 		jumpList:        make([]string, 0),
 		jumpListInd:     -1,
+		tabs:            map[int]*tab{1: {}},
+		tabInd:          1,
 	}
 
 	nav.resize(ui)
@@ -636,6 +648,18 @@ func (nav *nav) cdJumpListNext() {
 			log.Print(err)
 		}
 	}
+}
+
+func (nav *nav) saveTab() *tab {
+	t := &tab{
+		path:        nav.currDir().path,
+		jumpList:    slices.Clone(nav.jumpList),
+		jumpListInd: nav.jumpListInd,
+	}
+	if curr := nav.currFile(); curr != nil {
+		t.file = curr.path
+	}
+	return t
 }
 
 func (nav *nav) renew() {

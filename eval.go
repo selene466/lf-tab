@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -1023,6 +1024,81 @@ func cd(app *app, path string) error {
 	return nil
 }
 
+// tabOpen switches to the tab with the given number. A tab that does not exist
+// yet is created with the same state as the current tab.
+func tabOpen(app *app, n int) {
+	if n == app.nav.tabInd {
+		return
+	}
+
+	curr := app.nav.saveTab()
+	app.nav.tabs[app.nav.tabInd] = curr
+	app.nav.tabInd = n
+
+	t, ok := app.nav.tabs[n]
+	if !ok {
+		app.nav.tabs[n] = curr
+		return
+	}
+
+	loadTab(app, t)
+}
+
+// tabClose closes the current tab and switches to the closest remaining one,
+// preferring the tab on the left. Closing the last tab quits lf.
+func tabClose(app *app) {
+	if len(app.nav.tabs) == 1 {
+		app.requestQuit()
+		return
+	}
+
+	app.nav.currDir().visualAnchor = -1
+	delete(app.nav.tabs, app.nav.tabInd)
+
+	nums := slices.Sorted(maps.Keys(app.nav.tabs))
+	i, _ := slices.BinarySearch(nums, app.nav.tabInd)
+	app.nav.tabInd = nums[max(i-1, 0)]
+
+	loadTab(app, app.nav.tabs[app.nav.tabInd])
+}
+
+func loadTab(app *app, t *tab) {
+	app.nav.jumpList = slices.Clone(t.jumpList)
+	app.nav.jumpListInd = t.jumpListInd
+
+	chdir := t.path != app.nav.currDir().path
+	if chdir {
+		resetIncCmd(app)
+		preChdir(app)
+
+		// fall back to the closest parent if the directory no longer exists
+		path := t.path
+		for {
+			err := app.nav.cd(path)
+			if err == nil || isRoot(path) {
+				break
+			}
+			path = filepath.Dir(path)
+		}
+	}
+
+	dir := app.nav.currDir()
+	if t.file != "" && filepath.Dir(t.file) == dir.path {
+		if dir.loading && len(dir.files) == 0 {
+			if lstat, err := os.Lstat(t.file); err == nil {
+				dir.files = append(dir.files, &file{FileInfo: lstat, path: t.file})
+			}
+		}
+		dir.sel(filepath.Base(t.file), app.nav.height)
+	}
+	app.ui.loadFile(app, true)
+
+	if chdir {
+		restartIncCmd(app)
+		onChdir(app)
+	}
+}
+
 func exitCompMenu(app *app) {
 	app.ui.menu = ""
 	app.ui.menuSelect = nil
@@ -1575,6 +1651,21 @@ func (e *callExpr) eval(app *app, _ []string) {
 		if err := cd(app, path); err != nil {
 			app.ui.echoerrf("cd: %s", err)
 		}
+	case "tab-open":
+		if len(e.args) != 1 {
+			app.ui.echoerr("tab-open: requires an argument")
+			return
+		}
+
+		n, err := strconv.Atoi(e.args[0])
+		if err != nil || n < 1 || n > 9 {
+			app.ui.echoerrf("tab-open: invalid tab number: %s", e.args[0])
+			return
+		}
+
+		tabOpen(app, n)
+	case "tab-close":
+		tabClose(app)
 	case "select":
 		if len(e.args) != 1 {
 			app.ui.echoerr("select: requires an argument")

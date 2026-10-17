@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"maps"
+	"strconv"
 	"time"
 )
 
@@ -343,7 +344,7 @@ func init() {
 		"<left>":     &callExpr{"updir", nil, 1},
 		"l":          &callExpr{"open", nil, 1},
 		"<right>":    &callExpr{"open", nil, 1},
-		"q":          &callExpr{"quit", nil, 1},
+		"q":          &callExpr{"tab-close", nil, 1},
 		"gg":         &callExpr{"top", nil, 1},
 		"<home>":     &callExpr{"top", nil, 1},
 		"G":          &callExpr{"bottom", nil, 1},
@@ -403,6 +404,10 @@ func init() {
 	gOpts.nkeys["<space>"] = &listExpr{[]expr{&callExpr{"toggle", nil, 1}, &callExpr{"down", nil, 1}}, 1}
 	gOpts.nkeys["V"] = &callExpr{"visual", nil, 1}
 	gOpts.nkeys["v"] = &callExpr{"invert", nil, 1}
+	for i := range 9 {
+		n := strconv.Itoa(i + 1)
+		gOpts.nkeys["<a-"+n+">"] = &callExpr{"tab-open", []string{n}, 1}
+	}
 
 	// now do the same for Visual mode
 	gOpts.vkeys = maps.Clone(keys)
