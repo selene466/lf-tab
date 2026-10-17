@@ -80,6 +80,8 @@ jobs:
     if: github.repository == 'selene466/lf-tab'
     runs-on: ubuntu-latest
     needs: build
+    permissions:
+      contents: write
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v8
