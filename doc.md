@@ -525,7 +525,8 @@ A custom `open` command can be defined to override this default.
 
 ## jump-next (default `]`), jump-prev (default `[`)
 
-Change the current working directory to the next/previous jumplist item.
+Change the current working directory to the next/previous entry in the jump list.
+The jump list is a history of directories visited during the current session.
 
 ## tab-open (default `<a-1>` to `<a-9>`)
 
