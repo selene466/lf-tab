@@ -15,6 +15,7 @@ import (
 type watch struct {
 	watcher   *fsnotify.Watcher
 	events    <-chan fsnotify.Event
+	errors    <-chan error
 	quit      chan struct{}
 	pending   map[watchUpdate]bool
 	timeout   chan watchUpdate
@@ -52,6 +53,7 @@ func (watch *watch) start() {
 
 	watch.watcher = watcher
 	watch.events = watcher.Events
+	watch.errors = watcher.Errors
 
 	go watch.loop()
 }
@@ -66,6 +68,7 @@ func (watch *watch) stop() {
 
 	watch.watcher = nil
 	watch.events = nil
+	watch.errors = nil
 }
 
 func (watch *watch) add(path string) {
@@ -122,6 +125,11 @@ func (watch *watch) loop() {
 					watch.addUpdate(watchUpdate{"file", filepath.Join(path, file)})
 				}
 			}
+		case err := <-watch.errors:
+			// errors must be consumed, otherwise fsnotify blocks while sending
+			// them, possibly while holding a lock that is also required by
+			// watcher.Add, which then causes the main loop to hang
+			log.Printf("watcher: %s", err)
 		case update := <-watch.timeout:
 			if watch.pending[update] {
 				watch.processUpdate(update)
